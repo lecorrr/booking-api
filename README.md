@@ -145,6 +145,21 @@ Deliveries that fail with a network error, a 429 or a 5xx are retried 6 times ov
 an hour; other answers fail at once. To watch deliveries while developing, point
 `webhook_url` at a request inspector such as webhook.site.
 
+## Running on a server
+
+`compose.prod.yaml` holds the settings for a small server (2 GB of memory), and
+`make_env.py --host` writes the production values: debug off, the public host name, secure
+cookies, one gunicorn process with threads.
+
+```bash
+python3 scripts/make_env.py --host booking.example.com
+docker compose -f compose.yaml -f compose.prod.yaml up -d --build
+```
+
+The API still listens on 127.0.0.1:8030 only, so it needs an HTTPS proxy on the same
+machine. [portfolio-server](https://github.com/lecorrr/portfolio-server) sets up an AWS EC2
+instance this way, with Caddy in front of this project and its sibling.
+
 ## Developing without rebuilding the image
 
 Run PostgreSQL and Redis in Compose and Django from a virtual environment (Python 3.12 or

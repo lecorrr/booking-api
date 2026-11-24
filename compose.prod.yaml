@@ -1,0 +1,10 @@
+# Settings for one small server (2 GB of memory), applied on top of compose.yaml:
+#
+#   python3 scripts/make_env.py --host booking.example.com
+#   docker compose -f compose.yaml -f compose.prod.yaml up -d --build
+#
+# The API still listens on 127.0.0.1:8030 only; an HTTPS proxy on the same server forwards
+# to it.
+services:
+  worker:
+    command: ["celery", "-A", "bookingapi", "worker", "--loglevel=INFO", "--concurrency=1"]

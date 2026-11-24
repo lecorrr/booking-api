@@ -1,6 +1,6 @@
 [project]
 name = "booking-api"
-version = "0.1.0"
+dynamic = ["version"]
 description = "Book time slots without double bookings: Django REST API on PostgreSQL with Celery."
 readme = "README.md"
 requires-python = ">=3.12"
@@ -31,6 +31,9 @@ dev = [
 [build-system]
 requires = ["setuptools>=75"]
 build-backend = "setuptools.build_meta"
+
+[tool.setuptools.dynamic]
+version = {attr = "bookingapi.__version__"}
 
 [tool.setuptools.packages.find]
 include = ["bookingapi*", "accounts*", "resources*", "bookings*", "webhooks*", "core*"]

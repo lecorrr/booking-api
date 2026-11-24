@@ -4,6 +4,8 @@ from pathlib import Path
 import environ
 from celery.schedules import crontab
 
+from bookingapi import __version__
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 env = environ.Env()
@@ -135,7 +137,7 @@ SIMPLE_JWT = {
 SPECTACULAR_SETTINGS = {
     "TITLE": "Booking API",
     "DESCRIPTION": "Hold, confirm and cancel time slots without double bookings.",
-    "VERSION": "0.1.0",
+    "VERSION": __version__,
     "SERVE_INCLUDE_SCHEMA": False,
 }
 
