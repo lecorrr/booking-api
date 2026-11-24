@@ -1,0 +1,99 @@
+# Everything for local development. Ports are published on 127.0.0.1 only, and on
+# non-default numbers so they do not clash with databases already on the machine.
+name: booking
+
+x-app: &app
+  build: .
+  image: booking-api:local
+  env_file: .env
+  # Inside the Compose network the services are reached by name, not through 127.0.0.1.
+  environment:
+    DATABASE_URL: postgres://bookingapi:${POSTGRES_PASSWORD:?run scripts/make_env.py first}@postgres:5432/bookingapi
+    REDIS_URL: redis://redis:6379/0
+    CACHE_URL: rediscache://redis:6379/1
+  restart: unless-stopped
+
+services:
+  postgres:
+    image: postgres:18
+    environment:
+      POSTGRES_DB: bookingapi
+      POSTGRES_USER: bookingapi
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?run scripts/make_env.py first}
+    volumes:
+      # PostgreSQL 18 images keep data under /var/lib/postgresql/18/docker: mount the parent.
+      - postgres-data:/var/lib/postgresql
+    ports:
+      - "127.0.0.1:5436:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bookingapi -d bookingapi"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  redis:
+    image: redis:8-alpine
+    ports:
+      - "127.0.0.1:6381:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  migrate:
+    <<: *app
+    command: ["python", "manage.py", "migrate", "--noinput"]
+    restart: "no"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  api:
+    <<: *app
+    ports:
+      - "127.0.0.1:8030:8000"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health/', timeout=5)
+      interval: 15s
+      timeout: 10s
+      retries: 5
+
+  worker:
+    <<: *app
+    command: ["celery", "-A", "bookingapi", "worker", "--loglevel=INFO", "--concurrency=2"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+
+  # Exactly one beat: it starts the periodic tasks (expire holds, reminders, webhook retries).
+  beat:
+    <<: *app
+    command:
+      - celery
+      - -A
+      - bookingapi
+      - beat
+      - --loglevel=INFO
+      - --schedule=/tmp/celerybeat-schedule
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+
+volumes:
+  postgres-data:
