@@ -9,6 +9,26 @@ bookings impossible: an exclusion constraint on the booked time ranges holds eve
 requests race for the same slot. Celery workers send reminders, expire holds and deliver
 webhooks with retries. Everything runs locally with Docker Compose.
 
+## Live demo
+
+It runs on one small AWS EC2 instance in Frankfurt, set up by
+[portfolio-server](https://github.com/lecorrr/portfolio-server), with three demo resources
+in Kyiv time: a meeting room, a tennis court and a barber's chair.
+
+- API docs (Swagger UI): https://booking.63-182-82-117.sslip.io/api/v1/docs/
+- Health check: https://booking.63-182-82-117.sslip.io/api/v1/health/
+
+Free time on the tennis court needs no account (replace the date with an upcoming day):
+
+```bash
+curl "https://booking.63-182-82-117.sslip.io/api/v1/resources/2/availability/?date=2026-12-01"
+```
+
+To book, register (`POST /api/v1/auth/register/`), get a token (`POST /api/v1/auth/token/`,
+or Authorize in Swagger UI) and follow [Try the API](#try-the-api) with
+`http://127.0.0.1:8030` replaced by `https://booking.63-182-82-117.sslip.io`. Reminder
+emails there are only written to the worker's log.
+
 ## Stack
 
 | Part | Used for |
